@@ -1,0 +1,23 @@
+{
+  "name": "Deep Current #10 · Aurora Sentinel",
+  "description": "An original cosmic keeper from the Ursa Arcana Deep Current collection on Arc.",
+  "image": "/nft/deep_current/10.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Deep Current"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Wayfinder"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Void"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Arcane"
+    }
+  ]
+}

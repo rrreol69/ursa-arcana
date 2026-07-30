@@ -1,0 +1,23 @@
+{
+  "name": "Genesis #18 · Celestial Locksmith",
+  "description": "An original cosmic keeper from the Ursa Arcana Genesis collection on Arc.",
+  "image": "/nft/18.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Genesis"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Alchemist"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Tidal"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Arcane"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Night Ledger #10 · Aurora Sentinel",
+  "description": "An original cosmic keeper from the Ursa Arcana Night Ledger collection on Arc.",
+  "image": "/nft/night_ledger/10.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Night Ledger"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Wayfinder"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Void"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Arcane"
+    }
+  ]
+}

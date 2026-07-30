@@ -1,0 +1,23 @@
+{
+  "name": "Genesis #03 · The Quiet Oracle",
+  "description": "An original cosmic keeper from the Ursa Arcana Genesis collection on Arc.",
+  "image": "/nft/3.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Genesis"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Archivist"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Verdant"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Arcane"
+    }
+  ]
+}

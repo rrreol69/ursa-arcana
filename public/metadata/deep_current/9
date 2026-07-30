@@ -1,0 +1,23 @@
+{
+  "name": "Deep Current #09 · The Night Alchemist",
+  "description": "An original cosmic keeper from the Ursa Arcana Deep Current collection on Arc.",
+  "image": "/nft/deep_current/9.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Deep Current"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Archivist"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Verdant"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    }
+  ]
+}

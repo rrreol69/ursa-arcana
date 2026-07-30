@@ -1,0 +1,23 @@
+{
+  "name": "Night Ledger #14 · Comet Shepherd",
+  "description": "An original cosmic keeper from the Ursa Arcana Night Ledger collection on Arc.",
+  "image": "/nft/night_ledger/14.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Night Ledger"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Oracle"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Aurora"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Arcane"
+    }
+  ]
+}

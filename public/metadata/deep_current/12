@@ -1,0 +1,23 @@
+{
+  "name": "Deep Current #12 · The Cinder Seer",
+  "description": "An original cosmic keeper from the Ursa Arcana Deep Current collection on Arc.",
+  "image": "/nft/deep_current/12.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Deep Current"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Alchemist"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Tidal"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Arcane"
+    }
+  ]
+}

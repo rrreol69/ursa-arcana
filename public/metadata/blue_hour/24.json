@@ -1,0 +1,23 @@
+{
+  "name": "Blue Hour #24 · Guardian of Arc",
+  "description": "An original cosmic keeper from the Ursa Arcana Blue Hour collection on Arc.",
+  "image": "/nft/blue_hour/24.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Blue Hour"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Alchemist"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Tidal"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Mythic"
+    }
+  ]
+}

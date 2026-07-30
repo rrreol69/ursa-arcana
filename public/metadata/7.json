@@ -1,0 +1,23 @@
+{
+  "name": "Genesis #07 · Astral Botanist",
+  "description": "An original cosmic keeper from the Ursa Arcana Genesis collection on Arc.",
+  "image": "/nft/7.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Genesis"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Keeper"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Ember"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Arcane"
+    }
+  ]
+}

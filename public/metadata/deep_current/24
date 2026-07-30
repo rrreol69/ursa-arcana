@@ -1,0 +1,23 @@
+{
+  "name": "Deep Current #24 · Guardian of Arc",
+  "description": "An original cosmic keeper from the Ursa Arcana Deep Current collection on Arc.",
+  "image": "/nft/deep_current/24.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Deep Current"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Alchemist"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Tidal"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Mythic"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Night Ledger #12 · The Cinder Seer",
+  "description": "An original cosmic keeper from the Ursa Arcana Night Ledger collection on Arc.",
+  "image": "/nft/night_ledger/12.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Night Ledger"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Alchemist"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Tidal"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Arcane"
+    }
+  ]
+}

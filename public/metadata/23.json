@@ -1,0 +1,23 @@
+{
+  "name": "Genesis #23 · The Last Astrologer",
+  "description": "An original cosmic keeper from the Ursa Arcana Genesis collection on Arc.",
+  "image": "/nft/23.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Genesis"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Sentinel"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Gilded"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Arcane"
+    }
+  ]
+}

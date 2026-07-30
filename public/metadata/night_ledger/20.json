@@ -1,0 +1,23 @@
+{
+  "name": "Night Ledger #20 · Nebula Gardener",
+  "description": "An original cosmic keeper from the Ursa Arcana Night Ledger collection on Arc.",
+  "image": "/nft/night_ledger/20.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Night Ledger"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Oracle"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Aurora"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Arcane"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Blue Hour #05 · Warden of Tides",
+  "description": "An original cosmic keeper from the Ursa Arcana Blue Hour collection on Arc.",
+  "image": "/nft/blue_hour/5.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Blue Hour"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Sentinel"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Gilded"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    }
+  ]
+}

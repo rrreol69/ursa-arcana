@@ -1,0 +1,23 @@
+{
+  "name": "Deep Current #08 · Keeper of the Rift",
+  "description": "An original cosmic keeper from the Ursa Arcana Deep Current collection on Arc.",
+  "image": "/nft/deep_current/8.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Deep Current"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Oracle"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Aurora"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Mythic"
+    }
+  ]
+}

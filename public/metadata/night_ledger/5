@@ -1,0 +1,23 @@
+{
+  "name": "Night Ledger #05 · Warden of Tides",
+  "description": "An original cosmic keeper from the Ursa Arcana Night Ledger collection on Arc.",
+  "image": "/nft/night_ledger/5.svg",
+  "attributes": [
+    {
+      "trait_type": "Collection",
+      "value": "Night Ledger"
+    },
+    {
+      "trait_type": "Order",
+      "value": "Sentinel"
+    },
+    {
+      "trait_type": "Aura",
+      "value": "Gilded"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    }
+  ]
+}
