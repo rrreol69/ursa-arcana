@@ -16,6 +16,10 @@
     "contracts:verify:utilities": "hardhat run scripts/verify-utilities.cjs --network arcTestnet",
     "contracts:smoke:mint": "hardhat run scripts/smoke-mint.cjs --network arcTestnet",
     "assets:generate": "node scripts/generate-assets.cjs",
+    "video:sfx": "node scripts/generate-video-sfx.mjs",
+    "video:studio": "remotion studio video/index.ts",
+    "video:render": "remotion render video/index.ts UrsaArcanaXPromo renders/ursa-arcana-x-promo-source.mp4 --codec=h264 --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=192K --video-bitrate=7M",
+    "video:verify": "node scripts/verify-video.mjs renders/ursa-arcana-x-promo-1080p60.mp4",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -30,19 +34,22 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "5.1.0",
+    "@remotion/cli": "4.0.499",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "@openzeppelin/contracts": "5.1.0",
+    "dotenv": "^16.4.7",
     "eslint": "^9.19.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.18",
-    "dotenv": "^16.4.7",
     "globals": "^15.14.0",
     "hardhat": "^2.22.18",
+    "remotion": "4.0.499",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.22.0",
-    "vite": "^6.1.0"
+    "vite": "^6.1.0",
+    "zod": "4.4.3"
   }
 }

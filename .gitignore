@@ -12,3 +12,7 @@ coverage/
 Thumbs.db
 
 .vercel
+
+# Local-only licensed audio and video renders
+public/video/audio/
+renders/
