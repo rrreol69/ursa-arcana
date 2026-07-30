@@ -39,7 +39,8 @@ Produk harus terasa seperti satu dunia koleksi yang kohesif, bukan sekumpulan ha
 - Nama kerja: **Ursa Arcana**
 - Tema: beruang penjaga artefak dan gerbang kosmik.
 - Tone: misterius, premium, hangat, dan sedikit playful.
-- Tagline kerja: **“Guard the rare. Unlock the arcana.”**
+- Tagline: **“Guard the rare. Unlock its utility.”**
+- Bio X/Twitter: **“An NFT utility hub on Arc Testnet. Explore transparent raffles, onchain auctions and NFT-backed lending. Testnet only.”**
 
 ### Visual
 

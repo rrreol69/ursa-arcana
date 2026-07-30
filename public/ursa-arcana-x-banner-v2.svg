@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500" viewBox="0 0 1500 500" role="img" aria-labelledby="title desc">
+  <title id="title">Ursa Arcana X banner</title>
+  <desc id="desc">A minimal banner featuring the geometric Ursa Arcana bear sigil.</desc>
+
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="0.55" stop-color="#f1f5fa"/>
+      <stop offset="1" stop-color="#e4edf8"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#83b7ed" stop-opacity=".3"/>
+      <stop offset=".55" stop-color="#83b7ed" stop-opacity=".1"/>
+      <stop offset="1" stop-color="#83b7ed" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2f578c"/>
+      <stop offset="1" stop-color="#3898ec"/>
+    </linearGradient>
+    <filter id="soft-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="22" stdDeviation="24" flood-color="#203958" flood-opacity=".14"/>
+    </filter>
+  </defs>
+
+  <rect width="1500" height="500" fill="url(#background)"/>
+  <circle cx="1250" cy="245" r="340" fill="url(#halo)"/>
+
+  <g fill="none" stroke="#2f578c" stroke-opacity=".1">
+    <circle cx="1248" cy="246" r="222"/>
+    <circle cx="1248" cy="246" r="268"/>
+    <path d="M880 246h620"/>
+    <path d="M1248 0v500"/>
+  </g>
+
+  <g fill="#2f578c" opacity=".22">
+    <circle cx="947" cy="115" r="3"/>
+    <circle cx="1010" cy="405" r="2"/>
+    <circle cx="1414" cy="93" r="3"/>
+    <circle cx="1450" cy="365" r="2"/>
+  </g>
+
+  <g transform="translate(340 163)">
+    <rect width="46" height="5" rx="2.5" fill="url(#accent)"/>
+    <text x="0" y="86" fill="#1d1d1f" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="70" font-weight="650" letter-spacing="-3">Ursa Arcana</text>
+    <text x="2" y="137" fill="#515154" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="25" font-weight="450" letter-spacing=".3">Guard the rare. Unlock its utility.</text>
+    <g transform="translate(2 178)">
+      <circle cx="5" cy="5" r="5" fill="#34a853"/>
+      <text x="22" y="11" fill="#6e6e73" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15" font-weight="600" letter-spacing="1.8">LIVE ON ARC TESTNET</text>
+    </g>
+  </g>
+
+  <g filter="url(#soft-shadow)">
+    <circle cx="1248" cy="246" r="178" fill="#ffffff" fill-opacity=".88"/>
+  </g>
+  <circle cx="1248" cy="246" r="178" fill="none" stroke="#ffffff" stroke-opacity=".95"/>
+
+  <g transform="translate(1080 78) scale(5.25)">
+    <path fill="#1d1d1f" d="M8 9.5 23 13l9 6 9-6 15-3.5-4.5 16L54 37 47 51 32 59 17 51 10 37l2.5-11.5Z"/>
+    <path fill="#f5f5f7" d="m14.5 15.5 8.5 2.2-7.1 6.4Zm35 0-8.5 2.2 7.1 6.4ZM19.2 32l9 2.4-7.4 3.8Zm25.6 0-9 2.4 7.4 3.8ZM23.5 42.5 32 38l8.5 4.5-2.2 8L32 54l-6.3-3.5Z"/>
+    <path fill="#1d1d1f" d="m28.5 43.2 3.5-1.8 3.5 1.8-1.1 3.2H29.6Z"/>
+    <path fill="#3898ec" d="m32 22 1.8 3.2L37 27l-3.2 1.8L32 32l-1.8-3.2L27 27l3.2-1.8Z"/>
+  </g>
+
+  <path d="M0 499.5h1500" stroke="#1d1d1f" stroke-opacity=".08"/>
+</svg>

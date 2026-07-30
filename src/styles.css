@@ -462,11 +462,15 @@ h1, h2, h3 { font-family: var(--display); font-weight: 400; }
 .footer-col b { margin-bottom: 6px; color: #a9a7a1; font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; }
 .footer-col a { color: #6f717b; font-size: 10px; }
 .footer-col a:hover { color: var(--arc-deep); }
+.footer-external-link, .footer-credit { display: inline-flex; align-items: center; gap: 5px; width: fit-content; min-height: 28px; padding-block: 4px; }
+.footer-external-link svg, .footer-credit svg { width: 13px; height: 13px; transition: transform 180ms ease; }
+.footer-external-link:hover svg, .footer-credit:hover svg { transform: translate(2px, -2px); }
 .footer-status { align-self: start; padding: 17px; border: 1px solid var(--line); }
 .footer-status b { display: flex; align-items: center; gap: 8px; margin: 11px 0 7px; color: var(--green); font-family: var(--mono); font-size: 9px; font-weight: 400; text-transform: uppercase; }
 .footer-status small { color: #62646e; font-family: var(--mono); font-size: 7px; }
 .footer-bottom { min-height: 62px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); color: #555862; font-family: var(--mono); font-size: 7px; letter-spacing: 0.06em; text-transform: uppercase; }
-.footer-bottom > span:last-child { display: flex; align-items: center; gap: 4px; }
+.footer-credit { color: inherit; }
+.footer-credit:hover { color: var(--arc-deep); }
 
 .modal-backdrop { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 20px; background: rgba(3, 4, 8, 0.78); backdrop-filter: blur(9px); }
 .wallet-modal { position: relative; width: min(100%, 430px); padding: 38px; border: 1px solid var(--line-bright); background: #10131e; box-shadow: var(--shadow); text-align: center; }
@@ -1488,6 +1492,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 650; }
 }
 .footer-brand p, .footer-col a { color: #515154; font-size: 13px; }
 .footer-col b, .footer-status b { font-size: 13px; }
+.footer-external-link:focus-visible, .footer-credit:focus-visible { border-radius: 4px; outline: 3px solid rgba(56,152,236,.35); outline-offset: 3px; }
 
 @media (max-width: 820px) {
   .hero {
