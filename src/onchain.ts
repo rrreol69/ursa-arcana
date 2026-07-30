@@ -72,7 +72,7 @@ export function useNftSupply() {
   return useQuery({
     queryKey: ['ursa', 'nft-supply', addresses.nft],
     enabled: Boolean(client && addresses.nft),
-    refetchInterval: 8_000,
+    refetchInterval: 15_000,
     queryFn: async () => Number(await client!.readContract({ address: addresses.nft!, abi: nftAbi, functionName: 'totalSupply' })),
   })
 }
@@ -82,7 +82,7 @@ export function useMintStatus(owner?: Address) {
   return useQuery({
     queryKey: ['ursa', 'mint-status', addresses.nft, owner],
     enabled: Boolean(client && addresses.nft && owner),
-    refetchInterval: 8_000,
+    refetchInterval: 15_000,
     queryFn: async () => {
       const [supply, maxSupply, minted, walletLimit] = await Promise.all([
         client!.readContract({ address: addresses.nft!, abi: nftAbi, functionName: 'totalSupply' }),
@@ -99,17 +99,19 @@ export function useCollectionMintStatus(collection: CollectionConfig, owner?: Ad
   const client = usePublicClient({ chainId: arcTestnet.id })
   return useQuery({
     queryKey: ['ursa', 'mint-status', collection.id, collection.contract, owner],
-    enabled: Boolean(client && collection.contract && collection.mintable && owner),
-    refetchInterval: 8_000,
+    enabled: Boolean(client && collection.contract),
+    refetchInterval: 15_000,
     queryFn: async () => {
-      const [supply, maxSupply, minted, walletLimit] = await Promise.all([
+      const [supply, maxSupply, minted, walletLimit, onchainMintPrice] = await Promise.all([
         client!.readContract({ address: collection.contract!, abi: nftAbi, functionName: 'totalSupply' }),
         client!.readContract({ address: collection.contract!, abi: nftAbi, functionName: 'MAX_SUPPLY' }),
-        client!.readContract({ address: collection.contract!, abi: nftAbi, functionName: 'mintedBy', args: [owner!] }),
+        owner ? client!.readContract({ address: collection.contract!, abi: nftAbi, functionName: 'mintedBy', args: [owner] }) : 0n,
         client!.readContract({ address: collection.contract!, abi: nftAbi, functionName: 'MAX_PER_WALLET' }),
+        collection.mintable && (collection.mintPrice ?? 0n) > 0n
+          ? client!.readContract({ address: collection.contract!, abi: nftAbi, functionName: 'mintPrice' }).catch(() => collection.mintPrice ?? 0n)
+          : collection.mintPrice ?? 0n,
       ])
-      const mintPrice = collection.mintPrice ?? 0n
-      return { supply: Number(supply), maxSupply: Number(maxSupply), minted: Number(minted), walletLimit: Number(walletLimit), mintPrice }
+      return { supply: Number(supply), maxSupply: Number(maxSupply), minted: Number(minted), walletLimit: Number(walletLimit), mintPrice: onchainMintPrice }
     },
   })
 }
@@ -120,7 +122,7 @@ export function useOwnedNfts(owner?: Address) {
   return useQuery({
     queryKey: ['ursa', 'nfts', configuredCollections.map(collection => collection.contract), owner],
     enabled: Boolean(client && configuredCollections.length && owner),
-    refetchInterval: 8_000,
+    refetchInterval: 15_000,
     queryFn: async () => {
       const collections = configuredCollections.filter((collection, index, all) => all.findIndex(item => item.contract?.toLowerCase() === collection.contract?.toLowerCase()) === index)
       const scans = await Promise.allSettled(collections.map(async config => {
@@ -140,7 +142,7 @@ export function useRaffles(user?: Address) {
   return useQuery({
     queryKey: ['ursa', 'raffles', addresses.raffle, user],
     enabled: Boolean(client && addresses.raffle),
-    refetchInterval: 8_000,
+    refetchInterval: 15_000,
     queryFn: async () => {
       const count = Number(await client!.readContract({ address: addresses.raffle!, abi: raffleAbi, functionName: 'raffleCount' }))
       return Promise.all(Array.from({ length: count }, async (_, index): Promise<ChainRaffle> => {
@@ -160,7 +162,7 @@ export function useAuctions(user?: Address) {
   return useQuery({
     queryKey: ['ursa', 'auctions', addresses.auction, user],
     enabled: Boolean(client && addresses.auction),
-    refetchInterval: 8_000,
+    refetchInterval: 15_000,
     queryFn: async () => {
       const count = Number(await client!.readContract({ address: addresses.auction!, abi: auctionAbi, functionName: 'auctionCount' }))
       return Promise.all(Array.from({ length: count }, async (_, index): Promise<ChainAuction> => {
@@ -180,7 +182,7 @@ export function useLoans() {
   return useQuery({
     queryKey: ['ursa', 'loans', addresses.lending],
     enabled: Boolean(client && addresses.lending),
-    refetchInterval: 8_000,
+    refetchInterval: 15_000,
     queryFn: async () => {
       const count = Number(await client!.readContract({ address: addresses.lending!, abi: lendingAbi, functionName: 'loanCount' }))
       return Promise.all(Array.from({ length: count }, async (_, index): Promise<ChainLoan> => {

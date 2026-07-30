@@ -549,3 +549,31 @@ Snapshot status berikut diverifikasi pada 30 Juli 2026.
 - Vault memindai seluruh koleksi dan mengelompokkan NFT available maupun escrowed berdasarkan alamat kontraknya.
 - Listing raffle, auction, dan lending dikelompokkan berdasarkan koleksi NFT.
 - Status deployment dan allowlist terakhir diverifikasi dengan `npm run contracts:verify:utilities`.
+
+## 15. Status audit dan implementasi UI/UX
+
+Snapshot berikut diperbarui pada 30 Juli 2026 setelah audit visual dan interaksi menggunakan browser live pada viewport desktop, tablet, dan mobile.
+
+### Arah visual
+
+- Color palette, material gelap-translusen, depth, glow, dan karakter Apple-style product dipertahankan.
+- Hierarki tipografi diseimbangkan ulang agar display text tetap ekspresif tanpa mengorbankan body copy, metadata, label, dan teks bantuan.
+- Spacing, line-height, lebar baca, dan wrapping diperbaiki secara menyeluruh, termasuk pada route `/learn`.
+- Focus state, target interaksi, serta reduced-motion dipertahankan sebagai bagian dari aksesibilitas UI.
+
+### Komponen dan layout
+
+- Dropdown waktu memakai custom select yang dapat dipilih dengan pointer maupun keyboard, menampilkan state aktif, menutup setelah pilihan diterapkan, dan mengembalikan fokus ke trigger.
+- Menu navigasi, dialog, filter tabs, form controls, card actions, serta status transaksi memiliki struktur fokus dan responsif yang konsisten.
+- Listing lending menggunakan susunan satu kolom agar informasi principal, repayment, borrower, deadline, collateral, status, dan action tidak saling tumpang tindih.
+- Layout card, toolbar, filter, detail page, dan modal beradaptasi pada breakpoint desktop, tablet, dan mobile tanpa horizontal overflow.
+- Badge supply homepage ditempatkan di dalam frame artwork dengan inset yang konsisten; label saat ini menggunakan format `Collection supply` dan nilai `x of 24 minted`.
+- Empty, loading, error, disabled, dan connected-wallet states tetap terlihat sebagai bagian dari alur produk, bukan sebagai layout terpisah.
+
+### Verifikasi
+
+- Seluruh route utama diaudit melalui browser live, bukan hanya melalui inspeksi CSS.
+- Dropdown diverifikasi dapat mengubah nilai secara langsung.
+- Homepage, `/lend`, dan `/learn` diverifikasi ulang pada lebar 1440 px, 768 px, dan 390 px.
+- `npm run build` berhasil.
+- `npm run lint` berhasil.
