@@ -40,6 +40,7 @@ Produk harus terasa seperti satu dunia koleksi yang kohesif, bukan sekumpulan ha
 - Tema: beruang penjaga artefak dan gerbang kosmik.
 - Tone: misterius, premium, hangat, dan sedikit playful.
 - Tagline: **“Guard the rare. Unlock its utility.”**
+- Akun X/Twitter: **[@ursaarcana](https://x.com/ursaarcana)**
 - Bio X/Twitter: **“An NFT utility hub on Arc Testnet. Explore transparent raffles, onchain auctions and NFT-backed lending. Testnet only.”**
 
 ### Visual
@@ -103,6 +104,7 @@ Ingin melihat contoh nyata ERC-721, escrow, USDC transfer, event reading, dan wa
 - `Connect Wallet`
 - Indikator jaringan Arc Testnet.
 - Saldo USDC jika wallet terhubung.
+- Footer menampilkan tautan X/Twitter resmi ke `https://x.com/ursaarcana` serta creator credit ke `https://github.com/rrreol69`.
 
 ## 7. Functional requirements
 
@@ -494,7 +496,7 @@ DEPLOYER_PRIVATE_KEY
 - `npm run lint` berhasil.
 - `npm run contracts:test` berhasil.
 - `npm run contracts:verify:utilities` mengonfirmasi lima koleksi sudah di-allowlist.
-- Situs dapat dipublikasikan melalui Sites.
+- Situs production tersedia melalui Vercel di `https://ursa-arcana.vercel.app`.
 
 ## 12. Referensi
 
@@ -578,3 +580,34 @@ Snapshot berikut diperbarui pada 30 Juli 2026 setelah audit visual dan interaksi
 - Homepage, `/lend`, dan `/learn` diverifikasi ulang pada lebar 1440 px, 768 px, dan 390 px.
 - `npm run build` berhasil.
 - `npm run lint` berhasil.
+
+## 16. Social, promotional video, dan deployment web
+
+Snapshot berikut diperbarui pada 31 Juli 2026.
+
+### Social dan attribution
+
+- Akun X/Twitter resmi: `@ursaarcana`.
+- URL resmi: `https://x.com/ursaarcana`.
+- Footer website mengarah ke akun X resmi dan menampilkan creator credit yang mengarah ke `https://github.com/rrreol69`.
+- Bio X/Twitter mengikuti copy pada bagian Brand dan arah visual.
+
+### Promotional motion video
+
+- Composition Remotion: `UrsaArcanaXPromo`.
+- Implementasi menggunakan React, TypeScript, HTML, dan SVG; source video terisolasi dari bundle Vite website.
+- Format final: 1920×1080, 60 fps, 35 detik, dan 2.100 frame.
+- Storyboard mencakup brand reveal, hero, collections, raffles, auctions, lending, utility hub, dan CTA.
+- CTA akhir menampilkan tagline, `ursa-arcana.vercel.app`, `@ursaarcana`, dan `Testnet only.`
+- BGM aktif: `Close Up` oleh Michael Ramir C. dari Mixkit, disertai original procedural sound accents.
+- Audio final ditargetkan sekitar `-14 LUFS` dengan true peak maksimum `-1.5 dBTP`.
+- Render final menggunakan H.264 High, `yuv420p`, AAC-LC stereo 48 kHz, dan faststart.
+- MP3 mentah serta folder `renders/` tidak masuk Git; provenance dan checksum disimpan di `video/AUDIO-LICENSE.md`.
+
+### Web deployment
+
+- Production URL utama: `https://ursa-arcana.vercel.app`.
+- Alias kompatibilitas: `https://ursa-arcana-testnet.vercel.app`.
+- Production deployment terakhir diverifikasi mengembalikan HTTP 200.
+- Bundle production memuat `https://x.com/ursaarcana` dan tidak lagi memuat username lama `@ursa_rcana`.
+- `npm run lint` dan `npm run build` berhasil sebelum deployment.
