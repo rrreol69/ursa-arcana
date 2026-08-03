@@ -58,6 +58,7 @@ export const raffleAbi = parseAbi([
   'function raffleCount() view returns (uint256)',
   'function raffles(uint256) view returns (address creator, address nftContract, uint256 tokenId, uint256 ticketPrice, uint256 maxTickets, uint256 ticketsSold, uint64 endAt, uint64 revealDeadline, bytes32 commitment, address winner, uint8 state, bool prizeClaimed, bool proceedsClaimed)',
   'function ticketsByOwner(uint256 raffleId, address owner) view returns (uint256)',
+  'function ticketOwnerAt(uint256 raffleId, uint256 index) view returns (address)',
   'function createRaffle(address nftContract, uint256 tokenId, uint256 ticketPrice, uint256 maxTickets, uint64 endAt, bytes32 commitment) returns (uint256)',
   'function buyTickets(uint256 raffleId, uint256 quantity)',
   'function revealWinner(uint256 raffleId, bytes32 secret)',
@@ -65,6 +66,8 @@ export const raffleAbi = parseAbi([
   'function claimPrize(uint256 raffleId)',
   'function claimProceeds(uint256 raffleId)',
   'function claimRefund(uint256 raffleId)',
+  'event TicketsPurchased(uint256 indexed raffleId, address indexed buyer, uint256 quantity, uint256 cost)',
+  'event WinnerRevealed(uint256 indexed raffleId, address indexed winner, uint256 winningIndex)',
 ])
 
 export const auctionAbi = parseAbi([
@@ -78,6 +81,8 @@ export const auctionAbi = parseAbi([
   'function settleAuction(uint256 auctionId)',
   'function claimNFT(uint256 auctionId)',
   'function claimProceeds(uint256 auctionId)',
+  'event BidPlaced(uint256 indexed auctionId, address indexed bidder, uint256 amount, uint256 endAt)',
+  'event AuctionSettled(uint256 indexed auctionId, bool sold, address winner, uint256 amount)',
 ])
 
 export const lendingAbi = parseAbi([

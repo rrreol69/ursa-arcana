@@ -19,6 +19,8 @@ import {
   ShieldCheck,
   Sparkles,
   Ticket,
+  Trophy,
+  Users,
   Wallet,
   X,
 } from 'lucide-react'
@@ -40,7 +42,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { BearArtwork, UrsaMark, UtilityGlyph } from './Artwork'
 import { addresses, auctionAbi, collectionCatalog, collectionForAddress, erc20Abi, lendingAbi, nftAbi, raffleAbi, type CollectionConfig } from './contracts'
 import { nfts } from './data'
-import { useAuctions, useCollectionMintStatus, useLoans, useNftSupply, useOwnedNfts, useRaffles, type ChainAuction, type ChainLoan, type ChainRaffle, type OwnedArtifact } from './onchain'
+import { useAuctionActivity, useAuctions, useCollectionMintStatus, useLoans, useNftSupply, useOwnedNfts, useRaffleActivity, useRaffles, type ChainAuction, type ChainLoan, type ChainRaffle, type OwnedArtifact } from './onchain'
 import { arcTestnet, USDC_ADDRESS } from './wallet'
 
 type ActionContextValue = {
@@ -438,6 +440,39 @@ function ChainLoanCard({ loan }: { loan: ChainLoan }) {
   )
 }
 
+function RaffleSecretSuccess({ secret, warningOpen, onRequestClose, onClose, onBack }: { secret: `0x${string}`; warningOpen: boolean; onRequestClose: () => void; onClose: () => void; onBack: () => void }) {
+  const [secretCopied, setSecretCopied] = useState(false)
+  const [secretCopyError, setSecretCopyError] = useState(false)
+  const successRef = useRef<HTMLDivElement>(null)
+  const warningRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const activePanel = warningOpen ? warningRef.current : successRef.current
+    activePanel?.querySelector<HTMLButtonElement>('button')?.focus()
+  }, [warningOpen])
+  const copySecret = async () => {
+    try {
+      await copyText(secret)
+      setSecretCopied(true)
+      setSecretCopyError(false)
+    } catch {
+      setSecretCopied(false)
+      setSecretCopyError(true)
+    }
+  }
+  const downloadSecret = () => {
+    const blob = new Blob([`${secret}\n`], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = 'ursa-arcana-raffle-recovery-key.txt'
+    anchor.rel = 'noreferrer'
+    anchor.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 0)
+  }
+  if (warningOpen) return <div ref={warningRef} className="secret-backup-prompt" role="alert" aria-labelledby="secret-backup-title" aria-describedby="secret-backup-copy"><span className="eyebrow">Creator responsibility</span><h3 id="secret-backup-title">Have you backed up your recovery key?</h3><p id="secret-backup-copy">Only the creator wallet can reveal this raffle, but V1 also needs its recovery key. The key lives only in this browser; clearing site data or switching browsers without a backup can force the raffle into its refund path.</p><div className="secret-recovery__actions"><button type="button" className="button button--primary" onClick={onClose}>I've backed it up — close</button><button type="button" className="button button--ghost" onClick={onBack}>Back up now</button></div></div>
+  return <div ref={successRef} className="secret-recovery secret-recovery--quiet"><span className="secret-recovery__icon"><ShieldCheck size={24} /></span><span className="eyebrow">Raffle ready</span><h3>Reveal is secured automatically.</h3><p>This browser has saved the raffle key. When entries close, reconnect this creator wallet, select <b>Reveal winner</b>, and confirm the transaction. No code entry is required.</p><button type="button" className="button button--primary button--wide" onClick={onRequestClose}>Done</button><details className="secret-recovery__advanced"><summary>Recovery options</summary><p>Only use this if you may reveal from another browser. The creator wallet is still required.</p><code aria-label="Raffle recovery key" tabIndex={0}>{secret}</code><div className="secret-recovery__actions"><button type="button" className="button button--ghost" onClick={() => { void copySecret() }}>{secretCopied ? 'Copied' : 'Copy recovery key'}</button><button type="button" className="button button--ghost" onClick={downloadSecret}>Download backup</button></div>{secretCopyError && <p className="action-note" role="alert">Clipboard access was blocked. Use Download backup or select the key manually.</p>}</details></div>
+}
+
 function CreatePositionModal({ type, artifacts, initialArtifact, onClose }: { type: 'raffle' | 'auction' | 'loan' | 'choose'; artifacts: OwnedArtifact[]; initialArtifact?: OwnedArtifact; onClose: () => void }) {
   const { runAction } = useActions()
   const titleId = useId()
@@ -451,9 +486,16 @@ function CreatePositionModal({ type, artifacts, initialArtifact, onClose }: { ty
   const [termValue, setTermValue] = useState(7)
   const [maxTickets, setMaxTickets] = useState(20)
   const [createdSecret, setCreatedSecret] = useState<`0x${string}` | null>(null)
-  const [secretCopied, setSecretCopied] = useState(false)
-  const [secretCopyError, setSecretCopyError] = useState(false)
-  const dialogRef = useModalFocus(onClose)
+  const [secretStorageError, setSecretStorageError] = useState(false)
+  const [backupPromptOpen, setBackupPromptOpen] = useState(false)
+  const requestClose = () => {
+    if (createdSecret) {
+      if (!backupPromptOpen) setBackupPromptOpen(true)
+      return
+    }
+    onClose()
+  }
+  const dialogRef = useModalFocus(requestClose)
 
   useEffect(() => {
     setPrice(selectedType === 'raffle' ? 0.2 : selectedType === 'auction' ? 0.5 : 1)
@@ -473,16 +515,17 @@ function CreatePositionModal({ type, artifacts, initialArtifact, onClose }: { ty
       const secret = bytesToHex(crypto.getRandomValues(new Uint8Array(32)))
       const commitment = keccak256(secret)
       const storageKey = raffleSecretStorageKey(commitment)
+      setSecretStorageError(false)
       try {
         localStorage.setItem(storageKey, secret)
+        if (localStorage.getItem(storageKey) !== secret) throw new Error('Reveal key storage verification failed')
       } catch {
-        // The recovery panel below still lets the creator copy/download the secret.
+        setSecretStorageError(true)
+        return
       }
       const created = await runAction('Creating raffle', 'Raffle created', { kind: 'createRaffle', nftContract: artifact.collection, tokenId: artifact.tokenId, ticketPrice: parseUnits(String(price), 6), maxTickets, endAt, commitment })
       if (created) {
         setCreatedSecret(secret)
-        setSecretCopied(false)
-        setSecretCopyError(false)
       } else {
         try {
           localStorage.removeItem(storageKey)
@@ -501,34 +544,12 @@ function CreatePositionModal({ type, artifacts, initialArtifact, onClose }: { ty
   const validNumbers = [price, interest, durationValue, termValue, maxTickets].every(Number.isFinite)
   const invalidPrice = selectedType === 'auction' ? price < 0 : price <= 0
   const invalid = !artifactKey || !validNumbers || invalidPrice || price > 5 || durationValue < 1 || termValue < 1 || (selectedType === 'loan' && (interest < 0 || total > 5))
-  const copySecret = async () => {
-    if (!createdSecret) return
-    try {
-      await copyText(createdSecret)
-      setSecretCopied(true)
-      setSecretCopyError(false)
-    } catch {
-      setSecretCopied(false)
-      setSecretCopyError(true)
-    }
-  }
-  const downloadSecret = () => {
-    if (!createdSecret) return
-    const blob = new Blob([`${createdSecret}\n`], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = 'ursa-arcana-raffle-reveal-secret.txt'
-    anchor.rel = 'noreferrer'
-    anchor.click()
-    window.setTimeout(() => URL.revokeObjectURL(url), 0)
-  }
   return (
-    <div className="modal-backdrop" onPointerDown={event => event.target === event.currentTarget && onClose()}>
+    <div className="modal-backdrop" onPointerDown={event => event.target === event.currentTarget && requestClose()}>
       <section ref={dialogRef} className="wallet-modal create-modal" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
-        <button type="button" className="modal-close" data-autofocus onClick={onClose} aria-label="Close create position dialog"><X size={18} /></button>
+        {!backupPromptOpen && <button type="button" className="modal-close" data-autofocus onClick={requestClose} aria-label="Close create position dialog"><X size={18} /></button>}
         <span className="eyebrow">New onchain position</span><h2 id={titleId}>{selectedType === 'loan' ? 'Request a loan' : `Create ${selectedType}`}</h2>
-        {createdSecret ? <div className="secret-recovery"><span className="eyebrow">Back up your raffle reveal</span><h3>Keep this secret safe.</h3><p>Your raffle was created. You need this exact value to reveal the winner later. It is saved in this browser, but you should copy it to a secure place now. Never share it with entrants; anyone with this value can reveal the winner.</p><code aria-label="Raffle reveal secret" tabIndex={0}>{createdSecret}</code><div className="secret-recovery__actions"><button type="button" className="button button--primary" onClick={() => { void copySecret() }}>{secretCopied ? 'Copied' : 'Copy secret'}</button><button type="button" className="button button--ghost" onClick={downloadSecret}>Download backup</button><button type="button" className="button button--ghost" onClick={onClose}>Done</button></div>{secretCopyError && <p className="action-note" role="alert">Clipboard access was blocked. Use Download backup or select the secret manually.</p>}</div> : <>
+        {createdSecret ? <RaffleSecretSuccess secret={createdSecret} warningOpen={backupPromptOpen} onRequestClose={requestClose} onClose={onClose} onBack={() => setBackupPromptOpen(false)} /> : <>
         {type === 'choose' && <div className="create-type"><button type="button" className={selectedType === 'raffle' ? 'active' : ''} onClick={() => setSelectedType('raffle')}>Raffle</button><button type="button" className={selectedType === 'auction' ? 'active' : ''} onClick={() => setSelectedType('auction')}>Auction</button><button type="button" className={selectedType === 'loan' ? 'active' : ''} onClick={() => setSelectedType('loan')}>Loan</button></div>}
         {artifacts.length === 0 ? <EmptyState title="No available artifacts" copy="Mint an NFT or wait until an escrowed position closes." /> : <div className="create-form">
            <label><span>Collateral artifact</span><FormSelect ariaLabel="Collateral artifact" value={artifactKey} options={artifacts.map(artifact => ({ value: `${artifact.collection}:${artifact.tokenId}`, label: `${artifact.collectionName} · #${String(artifact.tokenId).padStart(2, '0')} · ${nfts[artifact.tokenId - 1].name}` }))} onChange={setArtifactKey} /></label>
@@ -539,7 +560,8 @@ function CreatePositionModal({ type, artifacts, initialArtifact, onClose }: { ty
           {selectedType === 'loan' && <DurationFields label="Time to repay after funding" unit={termUnit} value={termValue} hint="This clock starts only when a lender sends the principal. It does not start when you publish the request." onUnitChange={setTermUnit} onValueChange={setTermValue} />}
           {selectedType === 'loan' && <div className="loan-cashflow"><div><span>Publish request</span><b>NFT locked · 0 USDC received</b></div><div><span>If a lender funds it</span><b>You receive {price.toFixed(2)} USDC</b></div><div><span>Amount due by deadline</span><b>{total.toFixed(2)} USDC</b></div></div>}
            <button type="button" className="button button--primary button--wide" disabled={invalid} onClick={submit}>{selectedType === 'loan' ? 'Lock NFT & publish request' : 'Approve NFT & create'} <ArrowRight size={16} /></button>
-          <p className="action-note"><ShieldCheck size={14} />{selectedType === 'loan' ? 'Publishing only escrows the NFT. Your USDC balance changes after funding, repayment, or gas.' : 'Your wallet will request NFT approval first, then the escrow transaction.'}</p>
+          <p className="action-note"><ShieldCheck size={14} />{selectedType === 'loan' ? 'Publishing only escrows the NFT. Your USDC balance changes after funding, repayment, or gas.' : selectedType === 'raffle' ? 'The reveal key is secured automatically in this browser. The creator confirms the winner with one wallet transaction later.' : 'Your wallet will request NFT approval first, then the escrow transaction.'}</p>
+          {secretStorageError && <p className="action-note action-note--error" role="alert">This browser blocked secure local storage, so the raffle was not created. Enable site storage and try again.</p>}
         </div>}
         </>}
       </section>
@@ -781,11 +803,36 @@ function DetailTop({ type, id, title }: { type: string; id: number; title: strin
   return <div className="detail-top"><Link to={base}><ArrowLeft size={15} /> Back to {type === 'Loan' ? 'lending' : `${type.toLowerCase()}s`}</Link><span>{type} #{id} · {title}</span></div>
 }
 
+function formatActivityTime(value: string) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? 'Time unavailable' : date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+}
+
+function ChainAddressLink({ address, label }: { address: string; label?: string }) {
+  return <a className="chain-address" href={`${arcTestnet.blockExplorers.default.url}/address/${address}`} target="_blank" rel="noreferrer" title={address} aria-label={`${label ?? shortAddress(address)} on ArcScan, opens in a new tab`}><span>{label ?? shortAddress(address)}</span><ExternalLink aria-hidden="true" size={13} /></a>
+}
+
+function OutcomeAnnouncement({ eyebrow, title, copy, icon, address, meta, transactionHash, tone = 'winner' }: { eyebrow: string; title: string; copy: string; icon: ReactNode; address?: string; meta?: string; transactionHash?: string; tone?: 'winner' | 'neutral' }) {
+  return (
+    <section className={`outcome-banner outcome-banner--${tone}`} aria-live="polite">
+      <div className="outcome-banner__main"><span className="outcome-banner__icon">{icon}</span><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{copy}</p></div></div>
+      <div className="outcome-banner__proof">{address && <ChainAddressLink address={address} />}{meta && <span>{meta}</span>}{transactionHash && <a className="text-link" href={`${arcTestnet.blockExplorers.default.url}/tx/${transactionHash}`} target="_blank" rel="noreferrer">Verify result <ExternalLink size={14} /></a>}</div>
+    </section>
+  )
+}
+
+function ActivityFeedback({ loading, error, emptyTitle, emptyCopy, onRetry }: { loading: boolean; error: boolean; emptyTitle: string; emptyCopy: string; onRetry: () => void }) {
+  if (loading) return <div className="activity-feedback" role="status"><span className="spinner" /><div><b>Reading onchain activity</b><p>Indexing participant events from ArcScan.</p></div></div>
+  if (error) return <div className="activity-feedback activity-feedback--error" role="alert"><X size={18} /><div><b>Activity unavailable</b><p>The core raffle or auction state is still live. Retry the event history separately.</p></div><button type="button" className="button button--ghost" onClick={onRetry}>Retry</button></div>
+  return <div className="activity-feedback"><Users size={19} /><div><b>{emptyTitle}</b><p>{emptyCopy}</p></div></div>
+}
+
 function RaffleDetail() {
   const { id } = useParams()
   const { address } = useAccount()
   const { data = [], isLoading, isError, refetch } = useRaffles(address)
   const raffle = data.find(item => item.id === Number(id))
+  const activityQuery = useRaffleActivity(raffle?.id)
   const nft = raffle ? nfts[raffle.tokenId - 1] : undefined
   const [quantity, setQuantity] = useState(1)
   const [manualSecret, setManualSecret] = useState('')
@@ -804,6 +851,9 @@ function RaffleDetail() {
   const canRefund = raffle.state === 2 && raffle.userTickets > 0
   const soldOut = raffle.ticketsSold >= raffle.maxTickets
   const maxPurchase = Math.min(20, raffle.maxTickets - raffle.ticketsSold, Math.floor(5 / usdcValue(raffle.ticketPrice)))
+  const participants = activityQuery.data?.participants ?? []
+  const winnerParticipant = participants.find(participant => sameAddress(participant.address, raffle.winner))
+  const raffleOutcome = activityQuery.data?.outcome
   return (
     <main className="detail wrap">
       <DetailTop type="Raffle" id={raffle.id} title={nft.name} />
@@ -817,7 +867,8 @@ function RaffleDetail() {
           <div className="action-panel">
             <div className="action-panel__head"><div><small>Ticket price</small><b>{usdcValue(raffle.ticketPrice)} <em>USDC</em></b></div><div><small>Your tickets</small><b>{raffle.userTickets}</b></div></div>
              {raffle.state === 0 && now < raffle.endAt && !soldOut && <><div className="quantity-row"><label htmlFor="tickets">Number of tickets · max 5 USDC total</label><div className="stepper"><button type="button" aria-label="Decrease ticket quantity" onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</button><input id="tickets" value={quantity} min={1} max={maxPurchase} step={1} inputMode="numeric" onChange={event => setQuantity(clampWholeNumber(Number(event.target.value), 1, maxPurchase))} type="number" /><button type="button" aria-label="Increase ticket quantity" onClick={() => setQuantity(Math.min(maxPurchase, quantity + 1))}>+</button></div></div><button type="button" className="button button--primary button--wide" disabled={!Number.isInteger(quantity) || quantity < 1 || quantity > maxPurchase} onClick={() => runAction('Reserving your tickets', `${quantity} tickets entered into raffle #${raffle.id}`, { kind: 'raffle', id: raffle.id, quantity, amount: raffle.ticketPrice * BigInt(quantity) })}>{address ? `Buy ${quantity} ticket${quantity > 1 ? 's' : ''}` : 'Connect wallet to buy'}<span>{(usdcValue(raffle.ticketPrice) * quantity).toFixed(2)} USDC</span></button></>}
-            {canReveal && <><label className="bid-input"><span>Reveal secret {storedSecret ? '· saved in this browser' : ''}</span><div><input value={manualSecret || storedSecret || ''} onChange={event => setManualSecret(event.target.value)} placeholder="0x…" autoComplete="off" spellCheck={false} aria-invalid={Boolean(manualSecretValue && !secretValid)} /></div>{manualSecretValue && !secretValid && <small role="alert">Enter the 32-byte secret as 66 hexadecimal characters, including 0x.</small>}</label><button type="button" className="button button--primary button--wide" disabled={!secretValid} onClick={() => runAction('Revealing winner', `Winner revealed for raffle #${raffle.id}`, { kind: 'raffleLifecycle', id: raffle.id, functionName: 'revealWinner', secret: secret || undefined })}>Reveal winner <Sparkles size={16} /></button></>}
+            {canReveal && storedSecret && <><div className="reveal-ready"><ShieldCheck size={19} /><div><b>Ready to reveal</b><p>The saved raffle key matches this position. Confirm the transaction with the creator wallet—no code entry needed.</p></div></div><button type="button" className="button button--primary button--wide" onClick={() => runAction('Revealing winner', `Winner revealed for raffle #${raffle.id}`, { kind: 'raffleLifecycle', id: raffle.id, functionName: 'revealWinner', secret: storedSecret })}>Reveal winner <Sparkles size={16} /></button></>}
+            {canReveal && !storedSecret && <div className="reveal-recovery"><div className="reveal-recovery__head"><CircleHelp size={19} /><div><b>Reveal key not found on this browser</b><p>Reconnect on the browser used to create this raffle, or use its recovery key below. The creator wallet is always required.</p></div></div><label className="bid-input"><span>Recovery key</span><div><input value={manualSecret} onChange={event => setManualSecret(event.target.value)} placeholder="0x…" autoComplete="off" spellCheck={false} aria-invalid={Boolean(manualSecretValue && !secretValid)} /></div>{manualSecretValue && !secretValid && <small role="alert">Enter the 32-byte recovery key as 66 hexadecimal characters, including 0x.</small>}</label><button type="button" className="button button--primary button--wide" disabled={!secretValid} onClick={() => runAction('Revealing winner', `Winner revealed for raffle #${raffle.id}`, { kind: 'raffleLifecycle', id: raffle.id, functionName: 'revealWinner', secret: secret || undefined })}>Reveal winner <Sparkles size={16} /></button></div>}
             {raffle.state === 0 && raffle.ticketsSold > 0 && now > raffle.revealDeadline && <button className="button button--primary button--wide" onClick={() => runAction('Opening refunds', `Refunds opened for raffle #${raffle.id}`, { kind: 'raffleLifecycle', id: raffle.id, functionName: 'cancelUnrevealed' })}>Open refund flow</button>}
             {raffle.state === 0 && raffle.ticketsSold === 0 && now >= raffle.endAt && <button className="button button--ghost button--wide" onClick={() => runAction('Closing empty raffle', `NFT #${raffle.tokenId} returned`, { kind: 'raffleLifecycle', id: raffle.id, functionName: 'cancelUnrevealed' })}>Close raffle & return NFT</button>}
             {raffle.state === 1 && isWinner && !raffle.prizeClaimed && <button className="button button--primary button--wide" onClick={() => runAction('Claiming prize', `NFT #${raffle.tokenId} claimed`, { kind: 'raffleLifecycle', id: raffle.id, functionName: 'claimPrize' })}>Claim prize</button>}
@@ -829,7 +880,19 @@ function RaffleDetail() {
           <div className="progress-info"><div><span>{raffle.ticketsSold} of {raffle.maxTickets} tickets</span><b>{Math.round(raffle.ticketsSold / raffle.maxTickets * 100)}% filled</b></div><div className="progress"><i style={{ width: `${raffle.ticketsSold / raffle.maxTickets * 100}%` }} /></div><small>Creator {shortAddress(raffle.creator)}</small></div>
         </section>
       </div>
-      <section className="history-panel"><div className="panel-heading"><div><span className="eyebrow">Verified contract</span><h2>Raffle #{raffle.id} on Arc</h2></div><a href={`${arcTestnet.blockExplorers.default.url}/address/${addresses.raffle}`} target="_blank" rel="noreferrer" className="text-link">Open ArcScan <ExternalLink size={14} /></a></div></section>
+      {raffle.state === 1 && raffle.winner !== zeroAddress && <OutcomeAnnouncement eyebrow="Winner revealed onchain" title={`${shortAddress(raffle.winner)} won this Keeper.`} copy={`The committed reveal selected one of ${raffle.ticketsSold} ticket${raffle.ticketsSold === 1 ? '' : 's'}${winnerParticipant ? ` held by a wallet with ${winnerParticipant.tickets} entr${winnerParticipant.tickets === 1 ? 'y' : 'ies'}` : ''}. This result comes from the final raffle state.`} icon={<Trophy size={25} />} address={raffle.winner} meta={raffleOutcome ? `Winning ticket #${raffleOutcome.winningIndex + 1}` : 'Winner recorded by contract'} transactionHash={raffleOutcome?.transactionHash} />}
+      {raffle.state === 2 && <OutcomeAnnouncement eyebrow="Reveal window expired" title="No winner was announced." copy="The creator did not complete the reveal in time. Ticket holders can use the refund flow, and the prize returns through the contract rules." icon={<ShieldCheck size={25} />} meta={`${raffle.ticketsSold} refundable ticket${raffle.ticketsSold === 1 ? '' : 's'}`} tone="neutral" />}
+      {raffle.state === 3 && <OutcomeAnnouncement eyebrow="Raffle closed" title="Closed without entries." copy="No tickets were sold, so the contract returned the Keeper to its creator without selecting a winner." icon={<Ticket size={25} />} meta="No winner · no ticket funds moved" tone="neutral" />}
+      <section className="history-panel activity-panel">
+        <div className="panel-heading"><div><span className="eyebrow">Onchain entries</span><h2>Raffle participants</h2><p>Every wallet below comes from a confirmed `TicketsPurchased` event.</p></div><span className="panel-heading__meta">{activityQuery.isLoading ? 'Reading activity…' : `${participants.length} wallet${participants.length === 1 ? '' : 's'} · ${activityQuery.data?.totalTickets ?? 0} ticket${activityQuery.data?.totalTickets === 1 ? '' : 's'}`}</span></div>
+        {participants.length ? <div className="activity-list" role="table" aria-label={`Participants in raffle ${raffle.id}`}>{participants.map((participant, index) => {
+          const isRaffleWinner = raffle.state === 1 && sameAddress(participant.address, raffle.winner)
+          const share = raffle.ticketsSold ? participant.tickets / raffle.ticketsSold * 100 : 0
+          return <div className={`activity-row ${isRaffleWinner ? 'activity-row--winner' : ''}`} role="row" key={participant.address}><div className="activity-row__identity"><span className="activity-row__rank">{String(index + 1).padStart(2, '0')}</span><div><ChainAddressLink address={participant.address} /> <span className="activity-row__badges">{isRaffleWinner && <em>Winner</em>}{sameAddress(participant.address, address) && <em>You</em>}</span><small>Last entry {formatActivityTime(participant.lastEnteredAt)} · {participant.purchases} purchase{participant.purchases === 1 ? '' : 's'}</small></div></div><div className="activity-row__stats"><span><small>Tickets</small><b>{participant.tickets}</b></span><span><small>Draw share</small><b>{share.toFixed(1)}%</b></span><span><small>Entered</small><b>{usdcValue(participant.spent).toFixed(2)} USDC</b></span></div></div>
+        })}</div> : <ActivityFeedback loading={activityQuery.isLoading} error={activityQuery.isError} emptyTitle="No participants yet" emptyCopy="Confirmed ticket holders will appear here as soon as the first entry is indexed." onRetry={() => { void activityQuery.refetch() }} />}
+        {Boolean(activityQuery.data && activityQuery.data.totalTickets < raffle.ticketsSold) && <p className="activity-sync" role="status"><span className="spinner" />ArcScan is still indexing the latest {raffle.ticketsSold - activityQuery.data!.totalTickets} ticket{raffle.ticketsSold - activityQuery.data!.totalTickets === 1 ? '' : 's'}.</p>}
+      </section>
+      <section className="history-panel history-panel--proof"><div className="panel-heading"><div><span className="eyebrow">Verified contract</span><h2>Raffle #{raffle.id} on Arc</h2></div><a href={`${arcTestnet.blockExplorers.default.url}/address/${addresses.raffle}`} target="_blank" rel="noreferrer" className="text-link">Open ArcScan <ExternalLink size={14} /></a></div></section>
     </main>
   )
 }
@@ -839,6 +902,7 @@ function AuctionDetail() {
   const { address } = useAccount()
   const { data = [], isLoading, isError, refetch } = useAuctions(address)
   const auction = data.find(item => item.id === Number(id))
+  const activityQuery = useAuctionActivity(auction?.id)
   const nft = auction ? nfts[auction.tokenId - 1] : undefined
   const minimumRaw = auction
     ? auction.highestBid === 0n
@@ -859,6 +923,8 @@ function AuctionDetail() {
   const isWinner = sameAddress(address, auction.highestBidder)
   const ended = now >= auction.endAt
   const canBid = auction.state < 2 && now >= auction.startAt && !ended && !isSeller
+  const bids = activityQuery.data?.bids ?? []
+  const auctionOutcome = activityQuery.data?.outcome
   return (
     <main className="detail wrap">
       <DetailTop type="Auction" id={auction.id} title={nft.name} />
@@ -882,7 +948,19 @@ function AuctionDetail() {
           <div className="seller-line"><span>Seller <b className="mono">{shortAddress(auction.seller)}</b></span><span>Highest bidder {auction.highestBidder === zeroAddress ? 'None' : shortAddress(auction.highestBidder)}</span></div>
         </section>
       </div>
-      <section className="history-panel"><div className="panel-heading"><div><span className="eyebrow">Verified contract</span><h2>Auction #{auction.id} on Arc</h2></div><a href={`${arcTestnet.blockExplorers.default.url}/address/${addresses.auction}`} target="_blank" rel="noreferrer" className="text-link">Open ArcScan <ExternalLink size={14} /></a></div></section>
+      {auction.state === 2 && auction.sold && auction.highestBidder !== zeroAddress && <OutcomeAnnouncement eyebrow="Auction settled onchain" title={`${shortAddress(auction.highestBidder)} won the auction.`} copy={`The final accepted bid was ${usdcValue(auction.highestBid).toFixed(2)} USDC. Settlement is final; the winner can claim the NFT and the seller can claim the proceeds.`} icon={<Trophy size={25} />} address={auction.highestBidder} meta={`${usdcValue(auction.highestBid).toFixed(2)} USDC final bid`} transactionHash={auctionOutcome?.transactionHash} />}
+      {auction.state === 2 && !auction.sold && <OutcomeAnnouncement eyebrow="Auction settled onchain" title="Closed without a winner." copy={auction.highestBidder === zeroAddress ? 'No valid bid was submitted before the auction ended. The seller can reclaim the NFT.' : 'The highest bid did not meet the reserve. The bidder can withdraw their USDC and the seller can reclaim the NFT.'} icon={<Gavel size={25} />} meta={auction.highestBidder === zeroAddress ? 'No bids placed' : `${usdcValue(auction.highestBid).toFixed(2)} USDC below reserve`} transactionHash={auctionOutcome?.transactionHash} tone="neutral" />}
+      {auction.state === 3 && <OutcomeAnnouncement eyebrow="Auction cancelled" title="Closed before bidding began." copy="The seller cancelled while there were no bids, so the NFT returned without selecting a winner." icon={<Gavel size={25} />} meta="No winner · no funds settled" tone="neutral" />}
+      <section className="history-panel activity-panel">
+        <div className="panel-heading"><div><span className="eyebrow">Public bidding trail</span><h2>Auction contributors</h2><p>Each row is a confirmed `BidPlaced` event, newest first.</p></div><span className="panel-heading__meta">{activityQuery.isLoading ? 'Reading activity…' : `${activityQuery.data?.contributorCount ?? 0} bidder${activityQuery.data?.contributorCount === 1 ? '' : 's'} · ${bids.length} bid${bids.length === 1 ? '' : 's'}`}</span></div>
+        {bids.length ? <div className="activity-list" role="table" aria-label={`Bid history for auction ${auction.id}`}>{bids.map((bid, index) => {
+          const isFinalBid = sameAddress(bid.bidder, auction.highestBidder) && bid.amount === auction.highestBid
+          const isAuctionWinner = auction.state === 2 && auction.sold && isFinalBid
+          const position = isAuctionWinner ? 'Won' : isFinalBid && auction.state < 2 ? 'Leading' : isFinalBid && auction.state === 2 && !auction.sold ? 'Reserve not met' : 'Outbid'
+          return <div className={`activity-row ${isAuctionWinner ? 'activity-row--winner' : ''}`} role="row" key={`${bid.transactionHash}:${bid.logIndex}`}><div className="activity-row__identity"><span className="activity-row__rank">{String(bids.length - index).padStart(2, '0')}</span><div><ChainAddressLink address={bid.bidder} /> <span className="activity-row__badges">{isAuctionWinner ? <em>Winner</em> : isFinalBid && auction.state < 2 ? <em>Leading</em> : isFinalBid && auction.state === 2 && !auction.sold ? <em>Top bid</em> : null}{sameAddress(bid.bidder, address) && <em>You</em>}</span><small>Placed {formatActivityTime(bid.placedAt)}</small></div></div><div className="activity-row__stats activity-row__stats--auction"><span><small>Bid</small><b>{usdcValue(bid.amount).toFixed(2)} USDC</b></span><span><small>Position</small><b>{position}</b></span><span><small>Proof</small><a className="text-link" href={`${arcTestnet.blockExplorers.default.url}/tx/${bid.transactionHash}`} target="_blank" rel="noreferrer">View tx <ExternalLink size={13} /></a></span></div></div>
+        })}</div> : <ActivityFeedback loading={activityQuery.isLoading} error={activityQuery.isError} emptyTitle="No bids yet" emptyCopy="Confirmed bidders will appear here after the first onchain bid." onRetry={() => { void activityQuery.refetch() }} />}
+      </section>
+      <section className="history-panel history-panel--proof"><div className="panel-heading"><div><span className="eyebrow">Settlement contract</span><h2>Auction #{auction.id} on Arc</h2></div><a href={`${arcTestnet.blockExplorers.default.url}/address/${addresses.auction}`} target="_blank" rel="noreferrer" className="text-link">Open ArcScan <ExternalLink size={14} /></a></div></section>
     </main>
   )
 }
@@ -982,7 +1060,7 @@ function LearnPage() {
   const [open, setOpen] = useState(0)
   const faqs = [
     ['What is Arc Testnet?', 'Arc is an EVM-compatible network where USDC is used for both gas and application payments. Testnet assets have no real-world value.'],
-    ['How are raffle winners selected?', 'A creator commits a secret hash before tickets go on sale. After the raffle closes, revealing that secret produces a verifiable winner index. If they fail to reveal, entrants can claim refunds.'],
+    ['How are raffle winners selected?', 'The browser creates a hidden commitment before tickets go on sale. After entries close, the creator confirms one wallet transaction and the contract produces a verifiable winner index. If the creator does not reveal in time, entrants can claim refunds.'],
     ['What happens to escrowed NFTs?', 'Each artifact is held by the relevant smart contract. It can only move through a valid settlement, refund, repayment, or default path.'],
     ['Can I lose real funds here?', 'Ursa Arcana V1 targets Arc Testnet only. Testnet USDC is not real money, but you should still review every wallet request and never expose a private key.'],
   ]

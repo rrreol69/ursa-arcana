@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { zeroAddress, type Address } from 'viem'
+import { decodeEventLog, zeroAddress, type Address, type Hex } from 'viem'
 import { usePublicClient } from 'wagmi'
 import { addresses, auctionAbi, collectionCatalog, type CollectionConfig, lendingAbi, nftAbi, raffleAbi } from './contracts'
 import { arcTestnet } from './wallet'
@@ -63,6 +63,94 @@ export type OwnedArtifact = {
   legacy: boolean
   collectionId: string
   collectionName: string
+}
+
+export type RaffleParticipant = {
+  address: Address
+  tickets: number
+  spent: bigint
+  purchases: number
+  lastEnteredAt: string
+  transactionHash: Hex
+}
+
+export type RaffleOutcome = {
+  winner: Address
+  winningIndex: number
+  blockNumber: number
+  revealedAt: string
+  transactionHash: Hex
+}
+
+export type RaffleActivity = {
+  participants: RaffleParticipant[]
+  totalTickets: number
+  outcome?: RaffleOutcome
+}
+
+export type AuctionBid = {
+  bidder: Address
+  amount: bigint
+  endAt: number
+  blockNumber: number
+  logIndex: number
+  placedAt: string
+  transactionHash: Hex
+}
+
+export type AuctionOutcome = {
+  sold: boolean
+  winner: Address
+  amount: bigint
+  blockNumber: number
+  settledAt: string
+  transactionHash: Hex
+}
+
+export type AuctionActivity = {
+  bids: AuctionBid[]
+  contributorCount: number
+  outcome?: AuctionOutcome
+}
+
+type ExplorerLog = {
+  block_number: number
+  block_timestamp: string
+  data: Hex
+  index: number
+  topics: Array<Hex | null>
+  transaction_hash: Hex
+}
+
+type ExplorerLogPage = {
+  items: ExplorerLog[]
+  next_page_params: Record<string, string | number> | null
+}
+
+const explorerApiUrl = `${arcTestnet.blockExplorers.default.url}/api/v2`
+
+function compactTopics(topics: Array<Hex | null>) {
+  const values = topics.filter((topic): topic is Hex => Boolean(topic))
+  if (!values.length) throw new Error('Event log has no signature topic.')
+  return values as [Hex, ...Hex[]]
+}
+
+async function fetchContractLogs(address: Address) {
+  const items: ExplorerLog[] = []
+  let nextPage: ExplorerLogPage['next_page_params'] = null
+
+  for (let page = 0; page < 20; page += 1) {
+    const url = new URL(`${explorerApiUrl}/addresses/${address}/logs`)
+    if (nextPage) Object.entries(nextPage).forEach(([key, value]) => url.searchParams.set(key, String(value)))
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(`ArcScan activity request failed with ${response.status}.`)
+    const data = await response.json() as ExplorerLogPage
+    items.push(...data.items)
+    nextPage = data.next_page_params
+    if (!nextPage) break
+  }
+
+  return items
 }
 
 const normalize = (address?: Address) => address?.toLowerCase()
@@ -173,6 +261,104 @@ export function useAuctions(user?: Address) {
         ])
         return { id, seller: row[0], nftContract: row[1], tokenId: Number(row[2]), reservePrice: row[3], highestBid: row[4], highestBidder: row[5], startAt: Number(row[6]), endAt: Number(row[7]), originalEndAt: Number(row[8]), minIncrementBps: row[9], state: row[10], sold: row[11], nftClaimed: row[12], proceedsClaimed: row[13], withdrawable }
       }))
+    },
+  })
+}
+
+export function useRaffleActivity(raffleId?: number) {
+  return useQuery({
+    queryKey: ['ursa', 'raffle-activity', addresses.raffle, raffleId],
+    enabled: Boolean(addresses.raffle && raffleId && raffleId > 0),
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+    queryFn: async (): Promise<RaffleActivity> => {
+      const logs = await fetchContractLogs(addresses.raffle!)
+      const entries = new Map<string, RaffleParticipant>()
+      let outcome: RaffleOutcome | undefined
+
+      for (const log of logs) {
+        try {
+          const decoded = decodeEventLog({ abi: raffleAbi, data: log.data, topics: compactTopics(log.topics), strict: false })
+          if (decoded.eventName === 'TicketsPurchased' && Number(decoded.args.raffleId) === raffleId && decoded.args.buyer && decoded.args.quantity !== undefined && decoded.args.cost !== undefined) {
+            const buyer = decoded.args.buyer
+            const key = buyer.toLowerCase()
+            const previous = entries.get(key)
+            const isLatest = !previous || new Date(log.block_timestamp).getTime() > new Date(previous.lastEnteredAt).getTime()
+            entries.set(key, {
+              address: buyer,
+              tickets: (previous?.tickets ?? 0) + Number(decoded.args.quantity),
+              spent: (previous?.spent ?? 0n) + decoded.args.cost,
+              purchases: (previous?.purchases ?? 0) + 1,
+              lastEnteredAt: isLatest ? log.block_timestamp : previous.lastEnteredAt,
+              transactionHash: isLatest ? log.transaction_hash : previous.transactionHash,
+            })
+          }
+          if (decoded.eventName === 'WinnerRevealed' && Number(decoded.args.raffleId) === raffleId && decoded.args.winner && decoded.args.winningIndex !== undefined) {
+            if (!outcome || log.block_number > outcome.blockNumber) {
+              outcome = {
+                winner: decoded.args.winner,
+                winningIndex: Number(decoded.args.winningIndex),
+                blockNumber: log.block_number,
+                revealedAt: log.block_timestamp,
+                transactionHash: log.transaction_hash,
+              }
+            }
+          }
+        } catch {
+          // Ignore unrelated logs emitted by inherited contracts.
+        }
+      }
+
+      const participants = [...entries.values()].sort((a, b) => b.tickets - a.tickets || a.address.localeCompare(b.address))
+      return { participants, totalTickets: participants.reduce((sum, participant) => sum + participant.tickets, 0), outcome }
+    },
+  })
+}
+
+export function useAuctionActivity(auctionId?: number) {
+  return useQuery({
+    queryKey: ['ursa', 'auction-activity', addresses.auction, auctionId],
+    enabled: Boolean(addresses.auction && auctionId && auctionId > 0),
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+    queryFn: async (): Promise<AuctionActivity> => {
+      const logs = await fetchContractLogs(addresses.auction!)
+      const bids: AuctionBid[] = []
+      let outcome: AuctionOutcome | undefined
+
+      for (const log of logs) {
+        try {
+          const decoded = decodeEventLog({ abi: auctionAbi, data: log.data, topics: compactTopics(log.topics), strict: false })
+          if (decoded.eventName === 'BidPlaced' && Number(decoded.args.auctionId) === auctionId && decoded.args.bidder && decoded.args.amount !== undefined && decoded.args.endAt !== undefined) {
+            bids.push({
+              bidder: decoded.args.bidder,
+              amount: decoded.args.amount,
+              endAt: Number(decoded.args.endAt),
+              blockNumber: log.block_number,
+              logIndex: log.index,
+              placedAt: log.block_timestamp,
+              transactionHash: log.transaction_hash,
+            })
+          }
+          if (decoded.eventName === 'AuctionSettled' && Number(decoded.args.auctionId) === auctionId && decoded.args.sold !== undefined && decoded.args.winner && decoded.args.amount !== undefined) {
+            if (!outcome || log.block_number > outcome.blockNumber) {
+              outcome = {
+                sold: decoded.args.sold,
+                winner: decoded.args.winner,
+                amount: decoded.args.amount,
+                blockNumber: log.block_number,
+                settledAt: log.block_timestamp,
+                transactionHash: log.transaction_hash,
+              }
+            }
+          }
+        } catch {
+          // Ignore unrelated logs emitted by inherited contracts.
+        }
+      }
+
+      bids.sort((a, b) => b.blockNumber - a.blockNumber || b.logIndex - a.logIndex)
+      return { bids, contributorCount: new Set(bids.map(bid => bid.bidder.toLowerCase())).size, outcome }
     },
   })
 }

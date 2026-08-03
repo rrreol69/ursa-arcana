@@ -4,12 +4,15 @@ Ursa Arcana is a multi-collection NFT utility hub running on Arc Testnet. It com
 
 The project is testnet-only. All displayed assets and USDC balances have no real-world monetary value.
 
+- Live application: [ursa-arcana.vercel.app](https://ursa-arcana.vercel.app)
+- X: [@ursaarcana](https://x.com/ursaarcana)
+
 ## Features
 
 - Dedicated mint page for five NFT collections.
 - Free Genesis mint and paid ERC-20 USDC minting.
-- Verifiable commit-reveal NFT raffles.
-- English auctions with withdrawable outbid balances and last-minute extensions.
+- Verifiable commit-reveal NFT raffles with browser-secured reveal keys, explicit backup reminders, participant ticket totals, and onchain winner announcements.
+- English auctions with a public bid trail, contributor totals, withdrawable outbid balances, last-minute extensions, and final settlement announcements.
 - P2P NFT-backed lending with fixed principal, interest, and repayment deadlines.
 - Wallet Vault for owned and escrowed NFTs across all configured collections.
 - Collection-based grouping for raffles, auctions, loans, and Vault positions.
@@ -37,6 +40,17 @@ Genesis uses `UrsaArcanaNFT`. The three paid collections use separate `UrsaArcan
 | UrsaLending | `0x36a07654AE19c1311Fa71f0980FBb208baa04Ae7` |
 
 All five NFT collections are allowlisted on each utility contract. Contract state can be checked with `npm run contracts:verify:utilities`.
+
+## Raffle Lifecycle
+
+Raffle creation still uses commit-reveal security, but the normal flow does not ask the creator to re-enter a code. The browser generates and stores the reveal key locally; after ticket sales close, the creator reconnects the same wallet and confirms one `Reveal winner` transaction.
+
+- The completion dialog asks the creator to confirm that the recovery key has been backed up before closing.
+- A copy/download option is available for revealing from another browser. The creator wallet is always required.
+- Participant wallets, ticket totals, draw share, and confirmed purchases are reconstructed from contract events and linked to ArcScan.
+- Once revealed, the winner is announced from final contract state with transaction proof when indexed.
+- If the reveal deadline expires, anyone can open the refund flow. Entrants reclaim ticket payments and the creator reclaims the NFT through the contract rules.
+- The deployed V1 contract has no deployer-only NFT rescue or arbitrary admin transfer path.
 
 ## Stack
 
@@ -174,18 +188,17 @@ public/      NFT artwork, metadata, icons, and static hosting redirects
 scripts/     Asset generation, deployment, allowlist, inspection, and smoke scripts
 src/         React application, wallet config, contract catalog, and onchain queries
 test/        Hardhat contract tests
-brief.md     Product requirements and active Arc Testnet deployment snapshot
 ```
 
 ## Security
 
-- Never commit `.env`, a deployer private key, or a raffle reveal secret.
+- Never commit `.env`, a deployer private key, or a raffle recovery key.
 - Never prefix private values with `NEXT_PUBLIC_`.
 - Use a dedicated testnet deployment wallet with limited funds.
 - Review every wallet request and verify contract addresses before signing.
-- Raffle reveal secrets must remain private until the reveal transaction.
+- Raffle recovery keys must remain private until the reveal transaction. They are stored only in the creator's browser unless explicitly copied or downloaded.
 - This code has not undergone a production security audit and is not intended for mainnet use.
 
-## Product Brief
+## Repository Policy
 
-See [`brief.md`](./brief.md) for detailed requirements, contract behavior, acceptance criteria, and the current Arc Testnet deployment snapshot.
+The repository contains application and smart-contract source code plus required public web assets. Product briefs, raw audio/video, rendered media, presentation files, and local capture manifests remain local-only and are excluded through `.gitignore`.
