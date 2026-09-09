@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { decodeEventLog, zeroAddress, type Address, type Hex } from 'viem'
+import { createPublicClient, http, fallback, decodeEventLog, zeroAddress, type Address, type Hex } from 'viem'
+import { discoverOwnedTokens, indexedTokens } from './nftOwnership'
 import { usePublicClient } from 'wagmi'
 import { addresses, auctionAbi, collectionCatalog, type CollectionConfig, lendingAbi, nftAbi, raffleAbi } from './contracts'
 import { arcTestnet } from './wallet'
@@ -153,7 +154,6 @@ async function fetchContractLogs(address: Address) {
   return items
 }
 
-const normalize = (address?: Address) => address?.toLowerCase()
 
 export function useNftSupply() {
   const client = usePublicClient({ chainId: arcTestnet.id })
@@ -204,23 +204,34 @@ export function useCollectionMintStatus(collection: CollectionConfig, owner?: Ad
   })
 }
 
+const ownershipClient = createPublicClient({
+  chain: arcTestnet,
+  transport: fallback(arcTestnet.rpcUrls.default.http.map(url => http(url, {
+    batch: false, retryCount: 1, retryDelay: 500, timeout: 8_000,
+  })), { retryCount: 1 }),
+})
+
 export function useOwnedNfts(owner?: Address) {
-  const client = usePublicClient({ chainId: arcTestnet.id })
   const configuredCollections = collectionCatalog.filter(collection => Boolean(collection.contract))
   return useQuery({
     queryKey: ['ursa', 'nfts', configuredCollections.map(collection => collection.contract), owner],
-    enabled: Boolean(client && configuredCollections.length && owner),
-    refetchInterval: 15_000,
-    queryFn: async () => {
+    enabled: Boolean(configuredCollections.length && owner),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    retry: 1,
+    queryFn: async ({ signal }) => {
       const collections = configuredCollections.filter((collection, index, all) => all.findIndex(item => item.contract?.toLowerCase() === collection.contract?.toLowerCase()) === index)
-      const scans = await Promise.allSettled(collections.map(async config => {
-        const collectionAddress = config.contract!
-        const supply = Number(await client!.readContract({ address: collectionAddress, abi: nftAbi, functionName: 'totalSupply' }))
-        const ownership = await Promise.allSettled(Array.from({ length: supply }, (_, index) => client!.readContract({ address: collectionAddress, abi: nftAbi, functionName: 'ownerOf', args: [BigInt(index + 1)] })))
-        return ownership.flatMap((result, index): OwnedArtifact[] => result.status === 'fulfilled' && normalize(result.value) === normalize(owner) ? [{ collection: collectionAddress, tokenId: index + 1, legacy: config.id === 'legacy', collectionId: config.id, collectionName: config.name }] : [])
-      }))
-      if (scans.every(result => result.status === 'rejected')) throw scans[0].reason
-      return scans.flatMap(result => result.status === 'fulfilled' ? result.value : [])
+      const indexed = await indexedTokens(owner!, signal).catch(() => new Map<string, number[]>())
+      signal.throwIfAborted()
+      const blockNumber = await ownershipClient.getBlockNumber({ cacheTime: 0 })
+      const found = await discoverOwnedTokens(owner!, collections.map(config => config.contract!), {
+        balance: address => ownershipClient.readContract({ address: address as Address, abi: nftAbi, functionName: 'balanceOf', args: [owner!], blockNumber }),
+        supply: address => ownershipClient.readContract({ address: address as Address, abi: nftAbi, functionName: 'totalSupply', blockNumber }),
+        owner: (address, id) => ownershipClient.readContract({ address: address as Address, abi: nftAbi, functionName: 'ownerOf', args: [BigInt(id)], blockNumber }),
+      }, indexed, signal)
+      return collections.flatMap(config => (found.get(config.contract!) ?? []).map((tokenId): OwnedArtifact => ({
+        collection: config.contract!, tokenId, legacy: config.id === 'legacy', collectionId: config.id, collectionName: config.name,
+      })))
     },
   })
 }

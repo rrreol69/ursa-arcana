@@ -121,6 +121,41 @@ describe('Ursa Arcana contracts', function () {
     expect(await token.balanceOf(buyer.address)).to.equal(usdc(10_000))
   })
 
+  it('restricts auction claims to the winner and seller', async function () {
+    const { creator, buyer, bidder, token, nft, auction } = await fixture()
+    const now = await time.latest()
+    const auctionAddress = await auction.getAddress()
+    await nft.connect(creator).approve(auctionAddress, 2)
+    await auction.connect(creator).createAuction(await nft.getAddress(), 2, now + 10, now + 3600, usdc(2), 500)
+    await token.connect(bidder).approve(auctionAddress, usdc(2))
+    await time.increaseTo(now + 10)
+    await auction.connect(bidder).placeBid(1, usdc(2))
+    await time.increaseTo(now + 3601)
+    await auction.connect(buyer).settleAuction(1)
+
+    await expect(auction.connect(buyer).claimNFT(1)).to.be.revertedWithCustomError(auction, 'NotWinner')
+    await expect(auction.connect(bidder).claimProceeds(1)).to.be.revertedWithCustomError(auction, 'NotSeller')
+    await expect(auction.connect(buyer).claimProceeds(1)).to.be.revertedWithCustomError(auction, 'NotSeller')
+
+    await auction.connect(bidder).claimNFT(1)
+    await auction.connect(creator).claimProceeds(1)
+    expect(await nft.ownerOf(2)).to.equal(bidder.address)
+  })
+
+  it('restricts unsold auction NFT recovery to the seller', async function () {
+    const { creator, buyer, nft, auction } = await fixture()
+    const now = await time.latest()
+    const auctionAddress = await auction.getAddress()
+    await nft.connect(creator).approve(auctionAddress, 2)
+    await auction.connect(creator).createAuction(await nft.getAddress(), 2, now + 10, now + 100, usdc(2), 500)
+    await time.increaseTo(now + 101)
+    await auction.connect(buyer).settleAuction(1)
+
+    await expect(auction.connect(buyer).claimNFT(1)).to.be.revertedWithCustomError(auction, 'NotSeller')
+    await auction.connect(creator).claimNFT(1)
+    expect(await nft.ownerOf(2)).to.equal(creator.address)
+  })
+
   it('returns collateral after repayment and transfers it after default', async function () {
     const { creator, lender, token, nft, lending } = await fixture()
     const lendingAddress = await lending.getAddress()

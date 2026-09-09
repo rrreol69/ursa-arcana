@@ -42,6 +42,8 @@ export const erc20Abi = parseAbi([
 ])
 
 export const nftAbi = parseAbi([
+  'function allowedCollections(address collection) view returns (bool)',
+  'function balanceOf(address owner) view returns (uint256)',
   'function mint(uint256 quantity)',
   'function usdc() view returns (address)',
   'function mintPrice() view returns (uint256)',
